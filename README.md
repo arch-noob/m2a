@@ -1,5 +1,8 @@
+# !!! PROOF OF CONCEPT SOFTWARE !!!
+# !!! USE FOR YOUR OWN RISK !!!
+
 # m2a
-Mail to Apprise Message Relay
+Mail to [Apprise](https://github.com/caronc/apprise) Message Relay
 
 ## Installation
 
