@@ -1,0 +1,7 @@
+m2a:
+  port: 12525
+telegram:
+  bot_token: 1234567890987654321 # chat with @botfather to get it 
+  chat_ids:
+    - -1234567890 # @chatIDrobot will help to get it
+

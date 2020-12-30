@@ -1,0 +1,12 @@
+post_install() {
+    echo "You should copy config from \"/usr/share/m2a/m2a.yaml.example\" and edit for your taste"
+    echo "\"mkdir -p ~/.config/m2a && cp /usr/share/m2a/m2a.yaml.example ~/.config/m2a/m2a.yaml\""
+    echo "Enable and Start m2a.service"
+    echo "systemctl --user enable m2a.service && systemctl --user start m2a.service"
+    echo "And change your local MTA parameters for mail to be delivered via"
+    echo "HOST = localhost, PORT = 12525"
+}
+
+post_upgrade() {
+    post_install $1
+}
