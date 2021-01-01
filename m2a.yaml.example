@@ -1,5 +1,8 @@
 m2a:
-  port: 12525
+  port: 12525 # listening port
+  notify:
+    on_start: true # will send notification on start`
+    on_stop: true  # and stop of the daemon
 telegram:
   bot_token: 1234567890987654321 # chat with @botfather to get it 
   chat_ids:
