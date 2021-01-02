@@ -17,8 +17,8 @@ options=()
 install=${pkgname}.install
 changelog=
 source=('m2a.py' 'm2a.service' 'm2a.yaml.example' 'm2a.install')
-md5sums=('7208ba4c9d9788271c525ee66147214c'
-         '24f517e7dd31ff6bdb6845fb143a7850'
+md5sums=('9a5629ee16bb9d74c112c50abb6adbb6'
+         '4db2e9c1988faed295fa247e591110fd'
          '8499b4996f7f8db02603d59b259b2971'
          '6ee502e286e2c91559e4a9d637a8d528')
 

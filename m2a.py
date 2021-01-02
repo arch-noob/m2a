@@ -1,18 +1,35 @@
 #!/usr/bin/env python
 
+from time import sleep
 import signal
-import asyncio
-import logging
-
-import email
-from email.message import Message
 
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope, Session, SMTP
 
+from aiosmtpd.handlers import Sink
+
+import email
+from email.message import Message
+
 import apprise
 
+import logging
 log = logging.getLogger("smtphandler")
+
+
+class GracefulKiller:
+    """
+    SystemD Friendly ShutDown  
+    """
+
+    kill_now = False
+
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        self.kill_now = True
 
 
 class Notification:
@@ -51,10 +68,10 @@ class Notification:
     def info(self):
         return self.config, self.config_file
 
-    async def send(self, title, body):
-        self.send_sync(title, body)
+    # async def send(self, title, body):
+    #     self.send_sync(title, body)
 
-    def send_sync(self, title, body):
+    def send(self, title, body):
         # Create an Apprise instance
         tg_auth = f"tgram://{self.config['telegram']['bot_token']}/{self.config['telegram']['chat_ids'][0]}"
 
@@ -73,12 +90,12 @@ class Notification:
 
     def daemon_start(self):
         if self.config['m2a']['notify']['on_start']:
-            self.send_sync(title='M2A Daemon Started',
-                           body='All Systems Nominal')
+            self.send(title='M2A Daemon Started',
+                      body='All Systems Nominal')
 
     def daemon_stop(self):
         if self.config['m2a']['notify']['on_stop']:
-            self.send_sync(title='M2A Daemon Stopped', body='')
+            self.send(title='M2A Daemon Stopped', body='')
 
 
 def message_to_display(message: Message):
@@ -99,6 +116,16 @@ class Handler:
         self.notify = notify
         # self.loop = loop
 
+    def message_to_display(self, message: Message):
+        result = ''
+        if message.is_multipart():
+            for sub_message in message.get_payload():
+                result += message_to_display(sub_message)
+        else:
+            result = f"Content-type: {message.get_content_type()}\n" \
+                f"{message.get_payload()}\n" + "*" * 76 + '\n'
+        return result
+
     async def handle_DATA(self, server: SMTP, session: Session, envelope: Envelope):
         message: Message = email.message_from_bytes(envelope.content)
 
@@ -113,87 +140,43 @@ class Handler:
         print(f"Message data:\n {message_to_display(message)}")
 
         # await Notification().send(title=f"SUBJECT: {message['Subject']}", body=f"Message data:\n {message_to_display(message)}")
-        await self.notify.send(title=f"SUBJECT: {message['Subject']}", body=f"Message data:\n {message_to_display(message)}")
+        self.notify.send(
+            title=f"SUBJECT: {message['Subject']}", body=f"Message data:\n {message_to_display(message)}")
 
         return '250 OK Message Accepted'
 
 
-async def smtpd(notify):
-    import systemd.daemon
+def main(notification):
 
     HOSTNAME = ''
-    PORT = int(notify.config['m2a']['port'])
+    PORT = 12525
+
+    controller = Controller(Handler(notification),
+                            hostname=HOSTNAME, port=PORT)
 
     try:
-
-        cont = Controller(Handler(notify), hostname=HOSTNAME, port=PORT)
-        cont.start()
-
-        systemd.daemon.notify('READY=1')
-
-        notify.daemon_start()
-
-        # n = Notification()
-        # if n.config['m2a']['notify']['on_start']:
-        #     await n.send(title='M2A Daemon Started', body='All systems nominal')
-
-        input(
-            f"Server started on HOSTNAME='{HOSTNAME}' PORT={PORT}. Press Return to quit.\n")
-        cont.stop()
+        controller.start()
     except Exception as e:
-        print('Error starting daemon:', e, '\n')
-        if e.errno == 98:
-            print('Please try to bind config to other PORT.')
-            print(f'Config: {notify.config_file}')
-            print('Variable: "m2a.PORT"')
-        systemd.daemon.notify('READY=0')
-        cont.stop()
-    # finally:
-
-
-class GracefulKiller:
-
-    kill_now = False
-
-    def __init__(self):
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        self.kill_now = True
-
-
-notify = Notification()
-
-
-async def main(loop):
-    try:
-        await smtpd(notify)
-        # notify.daemon_start()
-    except Exception as e:
-        print(e)
+        print(f'Error: {e}')
 
 
 if __name__ == '__main__':
 
     killer = GracefulKiller()
 
-    loop = asyncio.get_event_loop()
+    # app wide notification
+    notification = Notification()
 
+    main(notification)
+
+    print('Started')
+    notification.daemon_start()
+
+    # try:
     while not killer.kill_now:
+        sleep(2)
+        pass
+    # except KeyboardInterrupt:
 
-        # n = Notification()
-
-        # print(n.info())
-
-        # logging.basicConfig(level=logging.DEBUG)
-        # loop.create_task(main(loop=loop))
-        try:
-            loop.run_until_complete(main(loop=loop))
-            # loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-
-    loop.stop()
-
-    notify.daemon_stop()
+    notification.daemon_stop()
+    print('\nFinishied')

@@ -1,0 +1,18 @@
+pkgbase = m2a
+	pkgdesc = M2A Mail to Apprise Message Relay
+	pkgver = 0.0.1
+	pkgrel = 1
+	install = m2a.install
+	arch = any
+	license = custom
+	source = m2a.py
+	source = m2a.service
+	source = m2a.yaml.example
+	source = m2a.install
+	md5sums = 9a5629ee16bb9d74c112c50abb6adbb6
+	md5sums = 4db2e9c1988faed295fa247e591110fd
+	md5sums = 8499b4996f7f8db02603d59b259b2971
+	md5sums = 6ee502e286e2c91559e4a9d637a8d528
+
+pkgname = m2a
+
